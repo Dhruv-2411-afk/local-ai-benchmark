@@ -1,0 +1,37 @@
+{
+  "llama3.2:3b": {
+    "n_samples": 5,
+    "time_to_first_token_s": {
+      "mean": 45.178,
+      "median": 0.668,
+      "stdev": 93.516,
+      "p95": 12.021,
+      "min": 0.474,
+      "max": 212.228
+    },
+    "total_latency_s": {
+      "mean": 46.193,
+      "median": 2.557,
+      "stdev": 93.177,
+      "p95": 12.678,
+      "min": 1.407,
+      "max": 212.661
+    },
+    "tokens_per_second": {
+      "mean": 29.442,
+      "median": 33.21,
+      "stdev": 8.902,
+      "p95": 36.96,
+      "min": 18.49,
+      "max": 37.22
+    },
+    "completion_tokens": {
+      "mean": 33.2,
+      "median": 31,
+      "stdev": 26.715,
+      "p95": 37,
+      "min": 8,
+      "max": 76
+    }
+  }
+}

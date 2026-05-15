@@ -1,0 +1,15 @@
+{
+  "llama3.2:3b": {
+    "n": 5,
+    "tps_mean": 34.53,
+    "tps_median": 37.62,
+    "ttft_mean_s": 0.56,
+    "latency_mean_s": 1.65,
+    "rss_delta_mean": 0.32,
+    "quality_mean": 2,
+    "quality_max": 2,
+    "schema_pct": 0.0,
+    "words_mean": 23.6,
+    "errors": 0
+  }
+}
