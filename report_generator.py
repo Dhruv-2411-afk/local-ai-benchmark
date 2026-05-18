@@ -460,7 +460,7 @@ def main():
 
     report = build_report(from_results=args.from_results)
     out    = RESULTS_DIR / "technical_report.md"
-    out.write_text(report)
+    out.write_text(report, encoding="utf-8")
     log.info("Report written → %s", out)
     print(f"\nReport saved to: {out}\n")
 

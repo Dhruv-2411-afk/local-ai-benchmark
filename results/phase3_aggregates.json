@@ -1,15 +1,41 @@
 {
   "llama3.2:3b": {
-    "n": 5,
-    "tps_mean": 34.53,
-    "tps_median": 37.62,
-    "ttft_mean_s": 0.56,
-    "latency_mean_s": 1.65,
-    "rss_delta_mean": 0.32,
-    "quality_mean": 2,
+    "n": 40,
+    "tps_mean": 43.72,
+    "tps_median": 45.84,
+    "ttft_mean_s": 0.44,
+    "latency_mean_s": 3.8,
+    "rss_delta_mean": 0.04,
+    "quality_mean": 1.88,
     "quality_max": 2,
     "schema_pct": 0.0,
-    "words_mean": 23.6,
+    "words_mean": 94.33,
+    "errors": 0
+  },
+  "phi4-mini": {
+    "n": 40,
+    "tps_mean": 29.9,
+    "tps_median": 27.8,
+    "ttft_mean_s": 0.79,
+    "latency_mean_s": 38.75,
+    "rss_delta_mean": 0.04,
+    "quality_mean": 1.93,
+    "quality_max": 2,
+    "schema_pct": 0.0,
+    "words_mean": 719.08,
+    "errors": 0
+  },
+  "mistral:7b": {
+    "n": 40,
+    "tps_mean": 11.92,
+    "tps_median": 11.82,
+    "ttft_mean_s": 0.79,
+    "latency_mean_s": 15.75,
+    "rss_delta_mean": -0.01,
+    "quality_mean": 1.88,
+    "quality_max": 2,
+    "schema_pct": 0.0,
+    "words_mean": 101.9,
     "errors": 0
   }
 }

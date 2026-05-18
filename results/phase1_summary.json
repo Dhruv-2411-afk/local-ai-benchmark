@@ -1,37 +1,37 @@
 {
   "llama3.2:3b": {
-    "n_samples": 5,
+    "n_samples": 120,
     "time_to_first_token_s": {
-      "mean": 45.178,
-      "median": 0.668,
-      "stdev": 93.516,
-      "p95": 12.021,
-      "min": 0.474,
-      "max": 212.228
+      "mean": 0.609,
+      "median": 0.492,
+      "stdev": 0.721,
+      "p95": 0.984,
+      "min": 0.409,
+      "max": 8.242
     },
     "total_latency_s": {
-      "mean": 46.193,
-      "median": 2.557,
-      "stdev": 93.177,
-      "p95": 12.678,
-      "min": 1.407,
-      "max": 212.661
+      "mean": 5.765,
+      "median": 4.92,
+      "stdev": 4.359,
+      "p95": 15.465,
+      "min": 0.515,
+      "max": 21.718
     },
     "tokens_per_second": {
-      "mean": 29.442,
-      "median": 33.21,
-      "stdev": 8.902,
-      "p95": 36.96,
-      "min": 18.49,
-      "max": 37.22
+      "mean": 29.403,
+      "median": 28.58,
+      "stdev": 7.502,
+      "p95": 41.33,
+      "min": 14.13,
+      "max": 56.12
     },
     "completion_tokens": {
-      "mean": 33.2,
-      "median": 31,
-      "stdev": 26.715,
-      "p95": 37,
-      "min": 8,
-      "max": 76
+      "mean": 132.783,
+      "median": 112.5,
+      "stdev": 105.126,
+      "p95": 342,
+      "min": 3,
+      "max": 485
     }
   }
 }
