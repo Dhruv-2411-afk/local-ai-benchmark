@@ -1,134 +1,180 @@
-# Local AI Assistant — Benchmark Suite
+# Local AI Benchmark & Smart Router
 
-Three-phase benchmark for small language models (3–7 B) running locally via Ollama.
+A three-phase benchmarking system for small language models (3-7B parameters) running locally via [Ollama](https://ollama.ai), with a smart router that uses the benchmark results to automatically pick the best model for each query.
+
+> **No internet. No API keys. No cost. Runs entirely on your machine.**
 
 ---
 
-## Prerequisites
+## What it does
+
+1. **Benchmarks** three local LLMs across 40 standardised prompts - measuring latency, throughput, and memory
+2. **Enforces structured output** via Pydantic validation with an automatic retry mechanism
+3. **Builds a routing table** from the benchmark results
+4. **Routes every question** to the best model for that category in real time
+
+---
+
+## Benchmark Results
+
+Tested on Windows 11 with NVIDIA GPU. All results at temperature = 0.0, 40 prompts x 3 runs.
+
+### Phase 1 - Llama 3.2 3B Raw Performance (120 samples)
+
+| Metric | Mean | Median | Std Dev | P95 |
+|--------|-----:|-------:|--------:|----:|
+| Time-to-First-Token | 0.609s | 0.492s | 0.721s | 0.984s |
+| Total Latency | 5.765s | 4.920s | 4.359s | 15.465s |
+| Tokens / Second | 29.4 | 28.6 | 7.5 | 41.3 |
+| Completion Tokens | 133 | 113 | 105 | 342 |
+
+> TTFT is stable under 1s for warm prompts. The high stdev on latency reflects output length variance across categories (code prompts generate 3-4x more tokens than factual ones).
+
+---
+
+### Phase 3 - Model Comparison (40 prompts each)
+
+| Metric | Llama 3.2 3B | Phi-4 Mini | Mistral 7B |
+|--------|------------:|----------:|-----------:|
+| **Tokens / Second (mean)** | **43.7** | 29.9 | 11.9 |
+| Tokens / Second (median) | 45.8 | 27.8 | 11.8 |
+| Time-to-First-Token | **0.44s** | 0.79s | 0.79s |
+| Total Latency (mean) | **3.80s** | 38.75s | 15.75s |
+| RAM Delta (MB) | 0.04 | 0.04 | -0.01 |
+| Quality Score (0-3) | 1.88 | **1.93** | 1.88 |
+| Avg Response Words | 94 | **719** | 102 |
+
+**Key findings:**
+- **Llama 3.2 3B** is the fastest - 3.7x faster than Mistral, 1.5x faster than Phi-4
+- **Phi-4 Mini** scores highest on quality and produces the most detailed responses (719 words avg vs 94 for Llama)
+- **Mistral 7B** is the slowest on this hardware but has near-zero memory overhead
+- All three models had 0 errors across 40 prompts
+
+---
+
+### Phase 2 - Structured Output vs Temperature
+
+Schema: Pydantic-validated JSON with 5 required fields. One automatic retry on failure.
+
+| Temperature | Success % | 1st-Try % | Token StdDev |
+|------------:|----------:|----------:|-------------:|
+| 0.0 | 100% | 100% | 6.2 |
+| 0.3 | 100% | 100% | 7.8 |
+| 0.7 | 100% | 100% | 9.2 |
+| 1.0 | 100% | 100% | 9.8 |
+| 1.4 | 100% | 100% | 9.1 |
+
+> Llama 3.2 3B maintained 100% schema compliance across all temperatures. Token StdDev rises with temperature - a direct measure of output unpredictability.
+
+---
+
+## Smart Router
+
+The router uses Phase 3 quality scores to automatically select the best model per question type.
+
+```
+You ask a question
+       |
+Classifier (keyword rules + local model fallback)
+       |
+Category: factual | reasoning | code | creative | edge
+       |
+Routing table (built from your benchmark data)
+       |
+Best model for that category
+       |
+Answer + routing metadata
+```
+
+### Running the assistant
 
 ```bash
-# 1. Install Ollama  →  https://ollama.ai
-curl -fsSL https://ollama.ai/install.sh | sh
-
-# 2. Install Python dependencies
-pip install -r requirements.txt
-
-# 3. Pull the three models (~8 GB total)
-ollama pull llama3.2:3b
-ollama pull phi4-mini
-ollama pull mistral:7b
+python assistant.py              # quality-first routing (default)
+python assistant.py --speed      # speed-first routing
+python assistant.py --explain    # show full routing decision per query
 ```
+
+### Example session
+
+```
+You: Write a binary search in Python
+  -> classified as code  -> routed to Mistral 7B  (14.2s | 12 tok/s)
+
+You: What year did the Berlin Wall fall?
+  -> classified as factual  -> routed to Llama 3.2 3B  (1.1s | 44 tok/s)
+
+You: If I flip a coin 3 times what is the probability of all heads?
+  -> classified as reasoning  -> routed to Phi-4 Mini  (8.3s | 28 tok/s)
+```
+
+### Commands
+
+| Command | Description |
+|---------|-------------|
+| `/stats` | Queries per model, avg speed, latency |
+| `/history` | All questions asked this session |
+| `/models` | Available models and specs |
+| `/clear` | Wipe conversation memory |
+| `/exit` | Quit and print session summary |
 
 ---
 
 ## Project Structure
 
 ```
-local_ai_assistant/
-├── config.py               # Shared constants, LatencyRecord dataclass, helpers
-├── prompts.py              # 40-prompt bank across 5 categories
-│
-├── phase1_measurement.py   # TTFT / latency / TPS benchmark (streaming)
-├── phase2_structured.py    # JSON schema enforcement, Pydantic, retry, T study
-├── phase3_comparison.py    # Cross-model comparison + memory profiling
-│
-├── report_generator.py     # Reads results/, writes technical_report.md
-├── run_all.py              # Master runner — runs all phases in sequence
-│
-├── requirements.txt
-├── results/                # Created automatically
-│   ├── phase1_results.jsonl
-│   ├── phase1_summary.json
-│   ├── phase2_results.jsonl
-│   ├── phase3_llama3.2_3b.jsonl
-│   ├── phase3_phi4-mini.jsonl
-│   ├── phase3_mistral_7b.jsonl
-│   ├── phase3_aggregates.json
-│   └── technical_report.md
+phase1_measurement.py   # TTFT, latency, TPS benchmark (streaming API)
+phase2_structured.py    # Pydantic schema enforcement + temperature study
+phase3_comparison.py    # Cross-model benchmark with memory profiling
+classifier.py           # Question category classifier
+router.py               # Benchmark-driven model router
+assistant.py            # CLI with conversation memory (last 5 exchanges)
+prompts.py              # 40-prompt standardised test bank
+report_generator.py     # Generates technical_report.md from results
+run_all.py              # Master runner - all phases in one command
+results/                # Benchmark output (jsonl + technical report)
 ```
 
 ---
 
-## Running
+## Setup
 
-### Full benchmark (recommended — takes 2–4 hours)
 ```bash
+# 1. Install Ollama - https://ollama.ai
+# 2. Pull models
+ollama pull llama3.2:3b
+ollama pull phi4-mini
+ollama pull mistral:7b
+
+# 3. Install dependencies
+python -m venv venv
+venv\Scripts\activate
+pip install -r requirements.txt
+
+# 4. Run full benchmark (~2-3 hrs)
 python run_all.py
-```
 
-### Quick smoke-test (5 prompts, llama only, ~10 minutes)
-```bash
-python run_all.py --quick
-```
-
-### Individual phases
-```bash
-# Phase 1 only
-python phase1_measurement.py --model llama3.2:3b --runs 3
-
-# Phase 2 only (all temperatures)
-python phase2_structured.py --model llama3.2:3b --temps 0.0 0.3 0.7 1.0 1.4
-
-# Phase 3 only (all three models)
-python phase3_comparison.py --models llama3.2:3b phi4-mini mistral:7b
-
-# Generate report from existing results
-python report_generator.py --from-results
+# 5. Start the assistant
+python assistant.py
 ```
 
 ---
 
-## Phase Overview
+## Tech Stack
 
-### Phase 1 — Raw Performance Measurement
-Runs every prompt `--runs` times using the **streaming API** (mandatory for TTFT).
-Captures:
-- **TTFT** — time_to_first_token: latency from dispatch to first byte
-- **Total latency** — wall-clock time until generation completes
-- **TPS** — completion_tokens ÷ generation_time
-
-Results: per-prompt records + mean/median/std/P95 summary per model.
-
-### Phase 2 — Structured Output & Temperature Study
-Enforces a **strict JSON schema** via a system prompt, validates with **Pydantic**,
-and retries once on failure before logging a graceful error.
-
-Temperatures tested: `[0.0, 0.3, 0.7, 1.0, 1.4]`
-
-Documents:
-- Success rate and first-try rate per temperature
-- Token count variance (std dev) as a proxy for output unpredictability
-- Retry recovery rate
-- Confidence self-rating distribution
-
-### Phase 3 — Model Comparison Study
-Benchmarks all three models on the same 40-prompt bank:
-- **Performance:** TPS, TTFT, total latency
-- **Memory:** process RSS delta per call (via `psutil`)
-- **Quality:** automated 0–3 score (length + keyword + schema checks)
-
-Produces a leaderboard and per-category quality breakdown.
+| Tool | Purpose |
+|------|---------|
+| Ollama | Local model serving |
+| Pydantic v2 | Response schema validation |
+| psutil | Memory profiling |
+| Rich | Terminal UI |
+| Python 3.10+ | Everything else |
 
 ---
 
-## Tips
+## Models Tested
 
-- **GPU acceleration**: Ollama auto-detects CUDA / Metal. Check `ollama ps` to
-  see which layers are on GPU.
-- **Memory**: Mistral 7B requires ~6 GB RAM (CPU) or VRAM (GPU). Ensure you
-  have headroom before running Phase 3.
-- **Reproducibility**: Temperature 0.0 + `seed=42` are set in all Phase 1 & 3
-  calls for maximum reproducibility.
-- **Adding models**: Add entries to `MODELS` in `config.py` and pass them via
-  `--models` to `phase3_comparison.py`.
-
----
-
-## Report
-
-After a full run, the Markdown technical report is at:
-```
-results/technical_report.md
-```
-It includes actual numbers pulled from all `.jsonl` result files with analysis,
-winner declarations, and recommendations.
+| Model | Parameters | Best for |
+|-------|----------:|---------|
+| Llama 3.2 3B | 3.2B | Speed - fastest response, lowest latency |
+| Phi-4 Mini | 3.8B | Quality - most detailed, highest accuracy |
+| Mistral 7B | 7.0B | Balanced - strong on code and reasoning |
